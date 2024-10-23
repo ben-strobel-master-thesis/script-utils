@@ -18,14 +18,17 @@ def convert_one_simulator_output_scenario(input_file_path, output_file_path):
     with open(output_file_path, "w") as f:
         data = []
         current_timestamp = -10
+        first_timestamp = -1
         for line in read_data:
             line = line.strip()
             if line.startswith("[") and line.endswith("]"):
                 line = line.replace("[", "").replace("]", "")
                 current_timestamp = int(line)
+                if first_timestamp == -1:
+                    first_timestamp = current_timestamp
             elif line.startswith("p"):
                 segments = line.split(" ")
-                cmd = "Spawn" if current_timestamp == 1 else "AddDestination"
+                cmd = "Spawn" if current_timestamp == first_timestamp else "AddDestination"
                 id = int(segments[0].replace("p", ""))+1
                 x = segments[1]
                 y = segments[2]
