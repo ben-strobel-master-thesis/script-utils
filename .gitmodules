@@ -1,0 +1,3 @@
+[submodule "the-one"]
+	path = the-one
+	url = https://github.com/akeranen/the-one.git
