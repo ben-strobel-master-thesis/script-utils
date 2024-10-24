@@ -1,3 +1,8 @@
+from sys import platform
+import subprocess
+import os
+import shutil
+
 x_shift = 1289629.9778929972
 y_shift = 6128904.62296110
 
@@ -12,7 +17,33 @@ simulation_shift_y = -75
 
 simulation_scale = 0.5
 
-def convert_one_simulator_output_scenario(input_file_path, output_file_path):
+def setup_one_simulator():
+    path_str = "./the-one/compile.sh" if platform == "linux" or platform == "darwin" else ".\\the-one\\compile.bat"
+    process = subprocess.run([os.path.abspath(path_str)], cwd="./the-one")
+    print(process.returncode)
+    print(process.stdout)
+    print(process.stderr)
+
+def run_one_simulator(seed: int, end_time_secs: int, agents_count: int, scenario_name: str, base_settings_file_path: str):
+    try:
+        os.remove("./scenarios/settings.txt")
+    except OSError:
+        pass
+    shutil.copyfile(base_settings_file_path, "./scenarios/settings.txt")
+    with open("./scenarios/settings.txt", "a") as f:
+        f.write(f"MovementModel.rngSeed = {seed}\n")
+        f.write(f"Scenario.endTime = {end_time_secs}\n")
+        f.write(f"Group.nrofHosts = {agents_count}\n")
+        f.write(f"Scenario.name = {scenario_name}\n")
+
+    path_str = "./the-one/one.sh" if platform == "linux" or platform == "darwin" else ".\\the-one\\one.bat"
+    config_arg_str = "../scenarios/settings.txt" if platform == "linux" or platform == "darwin" else "..\\scenarios\\settings.txt"
+    process = subprocess.run([os.path.abspath(path_str), "-b", "1", config_arg_str], cwd="./the-one")
+    print(process.returncode)
+    print(process.stdout)
+    print(process.stderr)
+
+def convert_one_simulator_output_to_emercast_scenario(input_file_path, output_file_path):
     with open(input_file_path, "r") as f:
         read_data = f.readlines()
     with open(output_file_path, "w") as f:

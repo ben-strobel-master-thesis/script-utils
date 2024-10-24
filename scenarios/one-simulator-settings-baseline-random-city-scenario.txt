@@ -1,0 +1,24 @@
+Scenario.updateInterval = 0.1
+Scenario.simulateConnections = false
+Scenario.nrofHostGroups = 1
+
+Group.movementModel = ShortestPathMapBasedMovement
+Group.router = PassiveRouter
+Group.nrofInterfaces = 0
+Group.speed = 0.5, 1.5
+
+Group1.groupID = p
+
+MapBasedMovement.nrofMapFiles = 1
+MapBasedMovement.mapFile1 = ../scenarios/emercast_city_model.wkt
+
+MovementModel.worldSize = 21000, 20000
+MovementModel.warmup = 0
+
+Events.nrof = 0
+
+Report.nrofReports = 1
+Report.reportDir = ../scenarios/one-simulator-output/
+Report.granularity = 10
+Report.report1 = LocationSnapshotReport
+
