@@ -1,4 +1,4 @@
-def remove_unreachable_multilines(input_file_path, output_file_path, root_multi_line_string_index = 1):
+def remove_unreachable_multilines(input_file_path, output_file_path, root_multi_line_string_index = 0):
     with open(input_file_path, "r") as f:
         read_data = f.readlines()
     vertices_sets = list()
@@ -18,6 +18,8 @@ def remove_unreachable_multilines(input_file_path, output_file_path, root_multi_
             vertices_list = list()
             for segment in segments:
                 coords = segment.split(" ")
+                if len(coords) != 2:
+                    continue
                 vertices_set.add((coords[0], coords[1]))
                 vertices_list.append((coords[0], coords[1]))
                 if i == root_multi_line_string_index:
@@ -47,8 +49,17 @@ def remove_unreachable_multilines(input_file_path, output_file_path, root_multi_
     print(f"Total vertices: {sum([len(x) for x in vertices_sets])} connected vertices: {len(connected_vertices)}")
     print(f"Total linestrings: {len(read_data)} connected linestrings: {len(connected_multi_line_indexes)}")
 
+    min_x = float("inf")
+    min_y = float("inf")
+
     # Writing filtered wkt file
     with open(output_file_path, "w") as f:
         for i in range(len(vertices_lists)):
             if i in connected_multi_line_indexes:
+                for v in vertices_lists[i]:
+                    if float(v[0]) < min_x:
+                        min_x = float(v[0])
+                    if float(v[1]) < min_y:
+                        min_y = float(v[1])
                 f.write(f"LINESTRING ({', '.join([t[0] + ' ' + t[1] for t in vertices_lists[i]])})\n\n")
+    return min_x, min_y

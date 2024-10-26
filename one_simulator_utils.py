@@ -3,23 +3,16 @@ import subprocess
 import os
 import shutil
 
-x_shift = 1289629.9778929972
-y_shift = 6128904.62296110
+emercast_sim_lower_corner = (689943.8, 5333949.88)
+emercast_sim_upper_corner = (692065.86, 5336041.33)
+emercast_sim_center = (691004.83, 5334995.605)
 
-simulation_center_x = 1287695.3472707325
-simulation_center_y = 6098257.544913205
-
-center_offset_x = x_shift - simulation_center_x
-center_offset_y = y_shift - simulation_center_y
-
-simulation_shift_x = 25
-simulation_shift_y = -75
-
-simulation_scale = 0.5
+emercast_sim_shift = (25, -75)
+emercast_sim_simulation_scale = 0.5
 
 def setup_one_simulator():
     path_str = "./the-one/compile.sh" if platform == "linux" or platform == "darwin" else ".\\the-one\\compile.bat"
-    process = subprocess.run([os.path.abspath(path_str)], cwd="./the-one")
+    process = subprocess.run(([] if platform == "win32" else ["sh"]) + [os.path.abspath(path_str)], cwd="./the-one")
     print(process.returncode)
     print(process.stdout)
     print(process.stderr)
@@ -38,12 +31,13 @@ def run_one_simulator(seed: int, end_time_secs: int, agents_count: int, scenario
 
     path_str = "./the-one/one.sh" if platform == "linux" or platform == "darwin" else ".\\the-one\\one.bat"
     config_arg_str = "../scenarios/settings.txt" if platform == "linux" or platform == "darwin" else "..\\scenarios\\settings.txt"
-    process = subprocess.run([os.path.abspath(path_str), "-b", "1", config_arg_str], cwd="./the-one")
+    process = subprocess.run(([] if platform == "win32" else ["sh"]) + [os.path.abspath(path_str), "-b", "1", config_arg_str], cwd="./the-one")
     print(process.returncode)
     print(process.stdout)
     print(process.stderr)
+    os.remove("./scenarios/settings.txt")
 
-def convert_one_simulator_output_to_emercast_scenario(input_file_path, output_file_path):
+def convert_one_simulator_output_to_emercast_scenario(input_file_path, output_file_path, wkt_min_bounds = (0,0)):
     with open(input_file_path, "r") as f:
         read_data = f.readlines()
     with open(output_file_path, "w") as f:
@@ -61,8 +55,14 @@ def convert_one_simulator_output_to_emercast_scenario(input_file_path, output_fi
                 segments = line.split(" ")
                 cmd = "Spawn" if current_timestamp == first_timestamp else "AddDestination"
                 id = int(segments[0].replace("p", ""))+1
-                x = segments[1]
-                y = segments[2]
+                x = float(segments[1])
+                y = float(segments[2])
+                if x < emercast_sim_lower_corner[0] or y < emercast_sim_lower_corner[1]:
+                    continue
+                if y > emercast_sim_upper_corner[0] or y > emercast_sim_upper_corner[1]:
+                    continue
+                x = (x - wkt_min_bounds[0] + (emercast_sim_center[0] - wkt_min_bounds[0])) * emercast_sim_simulation_scale + emercast_sim_shift[0]
+                y = (y - wkt_min_bounds[1] + (emercast_sim_center[1] - wkt_min_bounds[1])) * emercast_sim_simulation_scale + emercast_sim_shift[1]
                 data.append(f'{cmd} {id} {x} {y}\n')
         data.append("Broadcast 0 525 300 5\n")
         data.append("EndSimulation 600\n")
