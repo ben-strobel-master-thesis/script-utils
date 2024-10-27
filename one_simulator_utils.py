@@ -8,7 +8,7 @@ emercast_sim_upper_corner = (692065.86, 5336041.33)
 emercast_sim_center = (691004.83, 5334995.605)
 
 emercast_sim_shift = (25, -75)
-emercast_sim_simulation_scale = 0.5
+emercast_sim_simulation_scale = 1
 
 def setup_one_simulator():
     path_str = "./the-one/compile.sh" if platform == "linux" or platform == "darwin" else ".\\the-one\\compile.bat"
@@ -57,12 +57,12 @@ def convert_one_simulator_output_to_emercast_scenario(input_file_path, output_fi
                 id = int(segments[0].replace("p", ""))+1
                 x = float(segments[1])
                 y = float(segments[2])
-                if x < emercast_sim_lower_corner[0] or y < emercast_sim_lower_corner[1]:
+                if x + wkt_min_bounds[0] < emercast_sim_lower_corner[0] or y + wkt_min_bounds[1]  < emercast_sim_lower_corner[1]:
                     continue
-                if y > emercast_sim_upper_corner[0] or y > emercast_sim_upper_corner[1]:
+                if x + wkt_min_bounds[0] > emercast_sim_upper_corner[0] or y + wkt_min_bounds[1] > emercast_sim_upper_corner[1]:
                     continue
-                x = (x - wkt_min_bounds[0] + (emercast_sim_center[0] - wkt_min_bounds[0])) * emercast_sim_simulation_scale + emercast_sim_shift[0]
-                y = (y - wkt_min_bounds[1] + (emercast_sim_center[1] - wkt_min_bounds[1])) * emercast_sim_simulation_scale + emercast_sim_shift[1]
+                x = (x - (emercast_sim_center[0] - wkt_min_bounds[0])) * emercast_sim_simulation_scale + emercast_sim_shift[0]
+                y = (y - (emercast_sim_center[1] - wkt_min_bounds[1])) * emercast_sim_simulation_scale + emercast_sim_shift[1]
                 data.append(f'{cmd} {id} {x} {y}\n')
         data.append("Broadcast 0 525 300 5\n")
         data.append("EndSimulation 600\n")

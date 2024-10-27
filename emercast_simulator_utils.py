@@ -20,7 +20,7 @@ def download_emercast_simulator():
 
 def run_emercast_simulator(seed: int, scenario_name: str, scenario_file_path: str):
     try:
-        os.mkdir("./emercast-simulator/logs")
+        os.mkdir("./scenarios./emercast-simulator-output")
     except OSError:
         pass
     if platform != "linux" and platform != "win32":
@@ -30,7 +30,7 @@ def run_emercast_simulator(seed: int, scenario_name: str, scenario_file_path: st
                         "-batchmode",
                         "-nographics",
                         "-timestamps",
-                        "-logFile", f"./emercast-simulator/logs/{scenario_name}.log",
+                        "-logFile", f"./scenarios/emercast-simulator-output/{scenario_name}.log",
                         "-Seed", str(seed),
                         "-ScenarioFile", scenario_file_path])
     else:
@@ -39,7 +39,7 @@ def run_emercast_simulator(seed: int, scenario_name: str, scenario_file_path: st
                         "-batchmode",
                         "-nographics",
                         "-timestamps",
-                        "-logFile", f"./emercast-simulator/logs/{scenario_name}.log",
+                        "-logFile", f"./scenarios/emercast-simulator-output/{scenario_name}.log",
                         "-Seed", str(seed),
                         "-ScenarioFile", scenario_file_path])
     print(process.returncode)
