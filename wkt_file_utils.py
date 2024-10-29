@@ -1,3 +1,36 @@
+import math
+
+
+def create_skeleton_with_fingers(input_file_path, output_file_path):
+    with open(input_file_path, "r") as f:
+        read_data = f.readlines()
+    data = list()
+    for fileline in read_data:
+        fileline = fileline.upper().replace("LINESTRING", "").strip()
+        fileline = fileline.replace("(", "").replace(")", "").strip()
+        if len(fileline) == 0:
+            continue
+        segments = fileline.split(", ")
+        tuples = list()
+        for segments in segments:
+            strtuple = segments.split(" ")
+            tuples.append((float(strtuple[0]), float(strtuple[1])))
+        new_tuples = list()
+        if tuples[0] == tuples[-1]:
+            for i in range(math.ceil(len(tuples) / 2)):
+                median = ((tuples[i][0] + tuples[-i-1][0]) / 2, (tuples[i][1] + tuples[-i-1][1]) / 2)
+                new_tuples.append(median)
+                new_tuples.append(tuples[i])
+                new_tuples.append(median)
+                new_tuples.append(tuples[-i-1])
+                new_tuples.append(median)
+        else:
+            new_tuples = tuples
+        data.append(new_tuples)
+    with open(output_file_path, "w") as f:
+        for d in data:
+            f.write(f"LINESTRING ({', '.join([str(t[0]) + ' ' + str(t[1]) for t in d])})\n")
+
 def remove_unreachable_multilines(input_file_path, output_file_path, root_multi_line_string_index = 0):
     with open(input_file_path, "r") as f:
         read_data = f.readlines()
