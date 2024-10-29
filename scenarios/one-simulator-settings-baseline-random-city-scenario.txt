@@ -10,7 +10,7 @@ Group.speed = 0.5, 1.5
 Group1.groupID = p
 
 MapBasedMovement.nrofMapFiles = 1
-MapBasedMovement.mapFile1 = ../scenarios/emercast_city_model.wkt
+MapBasedMovement.mapFile1 = ../scenarios/emercast_city_model_skeleton.wkt
 
 MovementModel.worldSize = 21000, 20000
 MovementModel.warmup = 0

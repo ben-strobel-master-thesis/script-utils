@@ -18,11 +18,11 @@ def create_skeleton_with_fingers(input_file_path, output_file_path):
         new_tuples = list()
         if tuples[0] == tuples[-1]:
             for i in range(math.ceil(len(tuples) / 2)):
-                median = ((tuples[i][0] + tuples[-i-1][0]) / 2, (tuples[i][1] + tuples[-i-1][1]) / 2)
+                median = ((tuples[i][0] + tuples[-i - 1][0]) / 2, (tuples[i][1] + tuples[-i - 1][1]) / 2)
                 new_tuples.append(median)
                 new_tuples.append(tuples[i])
                 new_tuples.append(median)
-                new_tuples.append(tuples[-i-1])
+                new_tuples.append(tuples[-i - 1])
                 new_tuples.append(median)
         else:
             new_tuples = tuples
