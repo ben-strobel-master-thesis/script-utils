@@ -1,3 +1,4 @@
+import pathlib
 from sys import platform
 import subprocess
 import os
@@ -7,8 +8,8 @@ emercast_sim_lower_corner = (689943.8, 5333949.88)
 emercast_sim_upper_corner = (692065.86, 5336041.33)
 emercast_sim_center = (691004.83, 5334995.605)
 
-emercast_sim_shift = (25, -75)
-emercast_sim_simulation_scale = 1
+emercast_sim_shift = (0, 258)
+emercast_sim_simulation_scale = 0.5
 
 def setup_one_simulator():
     path_str = "./the-one/compile.sh" if platform == "linux" or platform == "darwin" else ".\\the-one\\compile.bat"
@@ -37,7 +38,8 @@ def run_one_simulator(seed: int, end_time_secs: int, agents_count: int, scenario
     print(process.stderr)
     os.remove("./scenarios/settings.txt")
 
-def convert_one_simulator_output_to_emercast_scenario(input_file_path, output_file_path, wkt_min_bounds = (0,0)):
+def convert_one_simulator_output_to_emercast_scenario(input_file_path, output_file_path, wkt_min_bounds = (0,0), end_time = 100):
+    pathlib.Path(output_file_path).parent.mkdir(parents=True, exist_ok=True)
     with open(input_file_path, "r") as f:
         read_data = f.readlines()
     with open(output_file_path, "w") as f:
@@ -57,13 +59,14 @@ def convert_one_simulator_output_to_emercast_scenario(input_file_path, output_fi
                 id = int(segments[0].replace("p", ""))+1
                 x = float(segments[1])
                 y = float(segments[2])
-                if x + wkt_min_bounds[0] < emercast_sim_lower_corner[0] or y + wkt_min_bounds[1]  < emercast_sim_lower_corner[1]:
-                    continue
-                if x + wkt_min_bounds[0] > emercast_sim_upper_corner[0] or y + wkt_min_bounds[1] > emercast_sim_upper_corner[1]:
-                    continue
                 x = (x - (emercast_sim_center[0] - wkt_min_bounds[0])) * emercast_sim_simulation_scale + emercast_sim_shift[0]
                 y = (y - (emercast_sim_center[1] - wkt_min_bounds[1])) * emercast_sim_simulation_scale + emercast_sim_shift[1]
+                y = -(y - emercast_sim_shift[1]) + emercast_sim_shift[1]
+                if x < -500 or 500 < x:
+                    continue
+                if y < -500 or 500 < y:
+                    continue
                 data.append(f'{cmd} {id} {x} {y}\n')
         data.append("Broadcast 0 525 300 5\n")
-        data.append("EndSimulation 600\n")
+        data.append(f"EndSimulation {end_time}\n")
         f.writelines(data)
