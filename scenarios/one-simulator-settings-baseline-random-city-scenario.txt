@@ -5,7 +5,7 @@ Scenario.nrofHostGroups = 1
 Group.movementModel = ShortestPathMapBasedMovement
 Group.router = PassiveRouter
 Group.nrofInterfaces = 0
-Group.speed = 0.5, 1.5
+Group.speed = 1.2,1.2
 
 Group1.groupID = p
 

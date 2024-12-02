@@ -1,14 +1,17 @@
-import emercast_simulator_scenario_utils
-import emercast_simulator_utils
-import one_simulator_utils
-import wkt_file_utils
+from scripts import emercast_simulator_utils, emercast_simulator_analyzer, one_simulator_utils
 
 min_bound = (689016.97, 5333281.47)
-# min_bound = wkt_file_utils.remove_unreachable_multilines("./scenarios/intermediate_walkable_lines.wkt", "./scenarios/emercast_city_model.wkt", 0)
-wkt_file_utils.create_skeleton_with_fingers("./scenarios/emercast_city_model.wkt", "./scenarios/emercast_city_model_skeleton.wkt")
-# one_simulator_utils.setup_one_simulator()
-# emercast_simulator_utils.download_emercast_simulator()
-one_simulator_utils.run_one_simulator(1, 1000, 500, "random-city-1", "./scenarios/one-simulator-settings-baseline-random-city-scenario.txt")
-one_simulator_utils.convert_one_simulator_output_to_emercast_scenario("./scenarios/one-simulator-output/random-city-1_LocationSnapshotReport.txt", "./scenarios/emercast-simulator-input/random-city-1.emerscenario", min_bound, 1000)
-# emercast_simulator_utils.run_emercast_simulator(1, "random-city-1", "./emercast-simulator/default.emerscenario")
-# emercast_simulator_utils.run_emercast_simulator(1, "random-city-1", "./scenarios/emercast-simulator-input/random-city-1.emerscenario")
+
+# Random city scenario runs
+scenario_name = "random-city"
+duration = 800
+agent_count = 1000
+outage_cover_percentage = 0.5
+protocol_enabled = True
+
+seed = 1
+file_name = f"{scenario_name}-{seed}"
+one_simulator_utils.run_one_simulator(seed, duration, agent_count, file_name, "./scenarios/one-simulator-settings-baseline-random-city-scenario.txt")
+one_simulator_utils.convert_one_simulator_output_to_emercast_scenario(f"./scenarios/one-simulator-output/{file_name}_LocationSnapshotReport.txt", f"./scenarios/emercast-simulator-input/{file_name}.emerscenario", outage_cover_percentage, min_bound, duration)
+emercast_simulator_utils.run_emercast_simulator(seed, file_name, f"./scenarios/emercast-simulator-input/{file_name}.emerscenario", protocol_enabled)
+emercast_simulator_analyzer.analyze_single_log(f"./scenarios/emercast-simulator-output/{file_name}.log", agent_count)

@@ -6,7 +6,7 @@ import subprocess
 
 def download_emercast_simulator():
     try:
-        os.mkdir("./emercast-simulator")
+        os.mkdir("../emercast-simulator")
     except OSError:
         pass
     print("Downloading emercast simulator archive...")
@@ -18,7 +18,7 @@ def download_emercast_simulator():
     os.remove("./emercast-simulator/emercast-simulator.tar")
     print("Done")
 
-def run_emercast_simulator(seed: int, scenario_name: str, scenario_file_path: str):
+def run_emercast_simulator(seed: int, scenario_name: str, scenario_file_path: str, protocol_enabled: bool):
     try:
         os.mkdir("./scenarios./emercast-simulator-output")
     except OSError:
@@ -32,16 +32,18 @@ def run_emercast_simulator(seed: int, scenario_name: str, scenario_file_path: st
                         "-timestamps",
                         "-logFile", f"./scenarios/emercast-simulator-output/{scenario_name}.log",
                         "-Seed", str(seed),
-                        "-ScenarioFile", scenario_file_path])
+                        "-ScenarioFile", scenario_file_path,
+                        "-Protocol-Enabled", str(protocol_enabled)])
     else:
-        process = subprocess.run(["wsl", "--exec",
+        process = subprocess.run(["wsl",
                         "./emercast-simulator/EmercastSimulator.x86_64",
                         "-batchmode",
                         "-nographics",
                         "-timestamps",
                         "-logFile", f"./scenarios/emercast-simulator-output/{scenario_name}.log",
                         "-Seed", str(seed),
-                        "-ScenarioFile", scenario_file_path])
+                        "-ScenarioFile", scenario_file_path,
+                        "-Protocol-Enabled", str(protocol_enabled)])
     print(process.returncode)
     print(process.stdout)
     print(process.stderr)

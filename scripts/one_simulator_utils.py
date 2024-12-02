@@ -1,3 +1,4 @@
+import math
 import pathlib
 from sys import platform
 import subprocess
@@ -26,7 +27,7 @@ def run_one_simulator(seed: int, end_time_secs: int, agents_count: int, scenario
     shutil.copyfile(base_settings_file_path, "./scenarios/settings.txt")
     with open("./scenarios/settings.txt", "a") as f:
         f.write(f"MovementModel.rngSeed = {seed}\n")
-        f.write(f"Scenario.endTime = {end_time_secs}\n")
+        f.write(f"Scenario.endTime = {end_time_secs*2}\n")
         f.write(f"Group.nrofHosts = {agents_count}\n")
         f.write(f"Scenario.name = {scenario_name}\n")
 
@@ -38,7 +39,7 @@ def run_one_simulator(seed: int, end_time_secs: int, agents_count: int, scenario
     print(process.stderr)
     os.remove("./scenarios/settings.txt")
 
-def convert_one_simulator_output_to_emercast_scenario(input_file_path, output_file_path, wkt_min_bounds = (0,0), end_time = 100):
+def convert_one_simulator_output_to_emercast_scenario(input_file_path, output_file_path, outage_coverage_percent, wkt_min_bounds = (0,0), end_time = 100):
     pathlib.Path(output_file_path).parent.mkdir(parents=True, exist_ok=True)
     with open(input_file_path, "r") as f:
         read_data = f.readlines()
@@ -63,10 +64,18 @@ def convert_one_simulator_output_to_emercast_scenario(input_file_path, output_fi
                 y = (y - (emercast_sim_center[1] - wkt_min_bounds[1])) * emercast_sim_simulation_scale + emercast_sim_shift[1]
                 y = -(y - emercast_sim_shift[1]) + emercast_sim_shift[1]
                 if x < -500 or 500 < x:
-                    continue
+                    x = -500 if x < 0 else 500
                 if y < -500 or 500 < y:
-                    continue
+                    y = -500 if y < 0 else 500
                 data.append(f'{cmd} {id} {x} {y}\n')
-        data.append("Broadcast 0 525 300 5\n")
+        data.append("Broadcast 5\n")
+        data.append(f"Outage 0 0 {get_radius_for_coverage(outage_coverage_percent)}\n")
         data.append(f"EndSimulation {end_time}\n")
         f.writelines(data)
+
+def get_radius_for_coverage(p):
+    x = 1000
+    y = 1000
+    rectangle_area = x * y
+    circle_area = p * rectangle_area
+    return math.sqrt(circle_area / math.pi)
