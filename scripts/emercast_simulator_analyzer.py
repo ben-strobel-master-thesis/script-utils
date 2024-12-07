@@ -3,9 +3,8 @@ import os
 import matplotlib.pyplot as plt
 from matplotlib import cm
 import numpy as np
-from scipy.interpolate import interp1d
+from scipy.interpolate import interp1d, interp2d
 from matplotlib.collections import EventCollection
-from matplotlib.ticker import FormatStrFormatter
 
 figures_output_folder = "./figures"
 
@@ -42,12 +41,103 @@ def analyze_single_log(log_file, max_agents):
 
 def analyze_batch_log(folder_path, scenario_base_name, duration, seeds, agent_counts, outage_area_coverages):
     metric_averages, metric_timestamps = get_batch_average_metrics(folder_path, scenario_base_name, 1000, seeds, agent_counts, outage_area_coverages)
-    enabled_disabled_plot(metric_averages, metric_timestamps)
+    create_enabled_disabled_plot(metric_averages, metric_timestamps)
     create_outage_area_plot(metric_averages, metric_timestamps, outage_area_coverages)
     create_agent_count_plot(metric_averages, metric_timestamps, agent_counts)
+    event_averages = get_batch_event_data(folder_path, scenario_base_name, seeds, agent_counts, outage_area_coverages)
+    create_message_hops_plot(event_averages, outage_area_coverages, agent_counts)
+    create_connection_established_per_message_delivered_plot(event_averages, outage_area_coverages, agent_counts)
 
 
-def enabled_disabled_plot(metric_averages, metric_timestamps):
+def create_message_hops_plot(event_averages, outage_area_coverages, agent_counts):
+    protocol_status = "enabled"
+    fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
+    num_interpolated_lines = 15
+
+    x_orig = np.array(agent_counts)
+    y_orig = np.array(outage_area_coverages)
+
+    X_orig, Y_orig = np.meshgrid(x_orig, y_orig)
+    Z_orig = np.array([([event_averages[f"{agent_value}-{outage_value}-{protocol_status}"][4] for agent_value in agent_counts]) for outage_value in outage_area_coverages])
+
+    f = interp2d(X_orig, Y_orig, Z_orig)
+    x = np.linspace(x_orig.min(), x_orig.max(), num_interpolated_lines)
+    y = np.linspace(y_orig.min(), y_orig.max(), num_interpolated_lines)
+    X, Y = np.meshgrid(x, y)
+    Z = f(x,y)
+
+    ax.set_xlim([0, 10000])
+    ax.set_ylim([0.2, 0.8])
+    ax.set_zlim([0, 10])
+
+    norm = plt.Normalize(0, 10)
+    colors = cm.jet(norm(Z))
+    surface = ax.plot_surface(X, Y, Z, facecolors=colors, shade=False, norm=norm)
+    surface.set_facecolor((0, 0, 0, 0))
+
+    ax.set_xticks([1000, 5000, 10000])
+    ax.set_yticks([0.2, 0.4, 0.6, 0.8])
+    ax.set_zticks([0, 2, 4, 6, 8, 10])
+
+    sm = plt.cm.ScalarMappable(cmap=cm.jet, norm=norm)
+    sm.set_array([])
+
+    ax.set_xlabel("Agent count")
+    ax.set_ylabel("Outage area %")
+    ax.set_zlabel("Average hops\nto transmit message")
+
+    plt.colorbar(sm, ax=ax, pad=0.15, shrink=0.75)
+    fig.tight_layout()
+    plt.savefig(f"{figures_output_folder}/connection_drop_plot.svg")
+    plt.show()
+    if not os.path.exists(figures_output_folder):
+        os.makedirs(figures_output_folder)
+
+def create_connection_established_per_message_delivered_plot(event_averages, outage_area_coverages, agent_counts):
+    protocol_status = "enabled"
+    fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
+
+    num_interpolated_lines = 15
+
+    x_orig = np.array(agent_counts)
+    y_orig = np.array(outage_area_coverages)
+
+    X_orig, Y_orig = np.meshgrid(x_orig, y_orig)
+    Z_orig = np.array([([(event_averages[f"{agent_value}-{outage_value}-{protocol_status}"][3] / event_averages[f"{agent_value}-{outage_value}-{protocol_status}"][0]) for agent_value in agent_counts]) for outage_value in outage_area_coverages])
+
+    f = interp2d(X_orig, Y_orig, Z_orig)
+    x = np.linspace(x_orig.min(), x_orig.max(), num_interpolated_lines)
+    y = np.linspace(y_orig.min(), y_orig.max(), num_interpolated_lines)
+    X, Y = np.meshgrid(x, y)
+    Z = f(x, y)
+
+    ax.set_xlim([0, 10000])
+    ax.set_ylim([0.2, 0.8])
+
+    norm = plt.Normalize(0, 1)
+    colors = cm.jet(norm(Z))
+    surface = ax.plot_surface(X, Y, Z, facecolors=colors, shade=False, norm=norm)
+    surface.set_facecolor((0, 0, 0, 0))
+
+    ax.set_xticks([1000, 5000, 10000])
+    ax.set_yticks([0.2, 0.4, 0.6, 0.8])
+
+    sm = plt.cm.ScalarMappable(cmap=cm.jet, norm=norm)
+    sm.set_array([])
+
+    ax.set_xlabel("Agent count")
+    ax.set_ylabel("Outage area %")
+    ax.set_zlabel("Connections dropped %", labelpad=10)
+
+    plt.colorbar(sm, ax=ax, pad=0.15, shrink=0.75)
+    fig.tight_layout()
+    plt.savefig(f"{figures_output_folder}/connection_established_per_message_delivered_.svg")
+    plt.show()
+    if not os.path.exists(figures_output_folder):
+        os.makedirs(figures_output_folder)
+
+
+def create_enabled_disabled_plot(metric_averages, metric_timestamps):
     agentcount = 10000
 
     agents_0_8_enabled = metric_averages[f"{agentcount}-{0.8}-enabled"]
@@ -60,8 +150,13 @@ def enabled_disabled_plot(metric_averages, metric_timestamps):
     ax.set_xlim([0, 1000])
     ax.set_xticks([0, 200, 400, 600, 800, 1000])
 
+    ax.set_xlabel("Time in s")
+    ax.set_ylabel("Agents with message", labelpad=5)
+
     ax.plot(metric_timestamps, agents_0_8_enabled, color="tab:blue")
     ax.plot(metric_timestamps, agents_0_8_disabled, color="tab:orange")
+    fig.tight_layout()
+    plt.savefig(f"{figures_output_folder}/enabled_disabled_by_timestamp.svg")
     plt.show()
 
 
@@ -93,7 +188,7 @@ def create_outage_area_plot(metric_averages, metric_timestamps, outage_area_cove
     ax.set_zlim([0, 10000])
 
     ax.set_xlabel("Time in s")
-    ax.set_ylabel("Outage area percentage")
+    ax.set_ylabel("Outage area %")
     ax.set_zlabel("Agents with message", labelpad=5)
 
     ax.set_xticks([0, 200, 400, 600, 800, 1000])
@@ -104,6 +199,7 @@ def create_outage_area_plot(metric_averages, metric_timestamps, outage_area_cove
 
     plt.colorbar(sm, ax=ax, pad=0.15, shrink=0.75)
     plt.savefig(f"{figures_output_folder}/outage_area_by_timestamp.svg")
+    fig.tight_layout()
     plt.show()
     if not os.path.exists(figures_output_folder):
         os.makedirs(figures_output_folder)
@@ -148,9 +244,28 @@ def create_agent_count_plot(metric_averages, metric_timestamps, agent_counts):
 
     plt.colorbar(sm, ax=ax, pad=0.15, shrink=0.75)
     plt.savefig(f"{figures_output_folder}/agent_count_by_timestamp.svg")
+    fig.tight_layout()
     plt.show()
     if not os.path.exists(figures_output_folder):
         os.makedirs(figures_output_folder)
+
+
+def get_batch_event_data(folder_path, scenario_base_name, seeds, agent_counts, outage_area_coverages):
+    event_averages = {}
+    status = "enabled"
+
+    for agent_count in agent_counts:
+            for outage_area_coverage in outage_area_coverages:
+                count = 0
+                event_sum = np.zeros(5)
+
+                for seed in seeds:
+                    _, connection_established, peer_out_of_range, connection_timed_out, message_transmitted = parse_log_file(f"{folder_path}/{scenario_base_name}-{seed}-{agent_count}-{outage_area_coverage}-{seed}-{status}.log")
+                    average_hops = np.average(np.array([value[2] for value in message_transmitted]))
+                    event_sum += np.array([len(connection_established), len(peer_out_of_range), len(connection_timed_out), len(message_transmitted), average_hops])
+                    count += 1
+                event_averages[f"{agent_count}-{outage_area_coverage}-{status}"] = np.divide(event_sum, count)
+    return event_averages
 
 
 def get_batch_average_metrics(folder_path, scenario_base_name, duration, seeds, agent_counts, outage_area_coverages):
@@ -195,7 +310,7 @@ def parse_log_file(log_file):
                 elif segments[3] == "PROTOCOL_TIMED_OUT":
                     events_connection_timed_out.append((int(segments[4]), float(segments[5])))
                 elif segments[3] == "MESSAGE_TRANSMITTED":
-                    events_peer_out_of_range.append((int(segments[4]), int(segments[5]), int(segments[6]), float(segments[7])))
+                    events_message_transmitted.append((int(segments[4]), int(segments[5]), int(segments[6]), float(segments[7])))
             elif segments[2] == "METRICS":
                 simulated_time = float(segments[3])
                 real_time = float(segments[4])
