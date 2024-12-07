@@ -1,6 +1,13 @@
-import matplotlib.pyplot as plt
-from matplotlib.collections import EventCollection
+import os
 
+import matplotlib.pyplot as plt
+from matplotlib import cm
+import numpy as np
+from scipy.interpolate import interp1d
+from matplotlib.collections import EventCollection
+from matplotlib.ticker import FormatStrFormatter
+
+figures_output_folder = "./figures"
 
 def analyze_single_log(log_file, max_agents):
     metrics, ce, poor, cto, mt = parse_log_file(log_file)
@@ -31,6 +38,123 @@ def analyze_single_log(log_file, max_agents):
 
     ax.set_title(f"Emercast log analysis")
     plt.show()
+
+
+def analyze_batch_log(folder_path, scenario_base_name, duration, seeds, agent_counts, outage_area_coverages):
+    metric_averages, metric_timestamps = get_batch_average_metrics(folder_path, scenario_base_name, 800, seeds, agent_counts, outage_area_coverages)
+    create_outage_area_plot(metric_averages, metric_timestamps, outage_area_coverages)
+    create_agent_count_plot(metric_averages, metric_timestamps, agent_counts)
+
+
+def create_outage_area_plot(metric_averages, metric_timestamps, outage_area_coverages):
+    agent_count = 10000
+    protocol_status = "enabled"
+    fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
+
+    y = np.array(outage_area_coverages)
+    num_interpolated_lines = 15
+    y = np.linspace(y.min(), y.max(), num_interpolated_lines)
+
+    x = metric_timestamps
+    X, Y = np.meshgrid(x, y)
+
+    z = np.array([metric_averages[f"{agent_count}-{value}-{protocol_status}"] for value in outage_area_coverages])
+    z = interp1d(
+        np.linspace(0, z.shape[0] - 1, z.shape[0]), z, axis=0, kind='linear'
+    )(np.linspace(0, z.shape[0] - 1, num_interpolated_lines))
+
+    ax.set_xlim([0, 800])
+    ax.set_ylim([0.2, 0.8])
+
+    norm = plt.Normalize(0, 10000)
+    colors = cm.jet(norm(z))
+    surface = ax.plot_surface(X, Y, z, facecolors=colors, shade=False, norm=norm)
+    surface.set_facecolor((0, 0, 0, 0))
+    ax.set_xlim(ax.get_xlim()[::-1])
+    ax.set_zlim([0, 10000])
+
+    ax.set_xlabel("Time in s")
+    ax.set_ylabel("Outage area percentage")
+    ax.set_zlabel("Agents with message", labelpad=5)
+
+    ax.set_xticks([0, 200, 400, 600, 800])
+    ax.set_yticks([0.2, 0.4, 0.6, 0.8])
+
+    sm = plt.cm.ScalarMappable(cmap=cm.jet, norm=norm)
+    sm.set_array([])
+
+    plt.colorbar(sm, ax=ax, pad=0.15, shrink=0.75)
+    plt.savefig(f"{figures_output_folder}/outage_area_by_timestamp.svg")
+    plt.show()
+    if not os.path.exists(figures_output_folder):
+        os.makedirs(figures_output_folder)
+
+
+def create_agent_count_plot(metric_averages, metric_timestamps, agent_counts):
+    outage_area_coverage = 0.8
+    protocol_status = "enabled"
+    fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
+
+    y = np.array(agent_counts)
+    num_interpolated_lines = 15
+    y = np.linspace(y.min(), y.max(), num_interpolated_lines)
+
+    x = metric_timestamps
+    X, Y = np.meshgrid(x, y)
+
+    z = np.array([metric_averages[f"{value}-{outage_area_coverage}-{protocol_status}"] for value in agent_counts])
+    z = interp1d(
+        np.linspace(0, z.shape[0] - 1, z.shape[0]), z, axis=0, kind='linear'
+    )(np.linspace(0, z.shape[0] - 1, num_interpolated_lines))
+
+    ax.set_xlim([0, 800])
+    ax.set_ylim([0, 1000])
+    ax.set_zlim([0, 10000])
+
+    norm = plt.Normalize(0, 10000)
+    colors = cm.jet(norm(z))
+    surface = ax.plot_surface(X, Y, z, facecolors=colors, shade=False, norm=norm)
+    surface.set_facecolor((0, 0, 0, 0))
+
+    ax.set_xlim(ax.get_xlim()[::-1])
+    ax.set_xlabel("Time in s")
+    ax.set_ylabel("Agent count")
+    ax.set_zlabel("Agents with message", labelpad=5)
+
+    ax.set_xticks([0, 200, 400, 600, 800])
+    ax.set_yticks([1000, 5000, 10000])
+
+    sm = plt.cm.ScalarMappable(cmap=cm.jet, norm=norm)
+    sm.set_array([])
+
+    plt.colorbar(sm, ax=ax, pad=0.15, shrink=0.75)
+    plt.savefig(f"{figures_output_folder}/agent_count_by_timestamp.svg")
+    plt.show()
+    if not os.path.exists(figures_output_folder):
+        os.makedirs(figures_output_folder)
+
+
+def get_batch_average_metrics(folder_path, scenario_base_name, duration, seeds, agent_counts, outage_area_coverages):
+    protocol_status = ["enabled", "disabled"]
+    metric_timestamps = np.arange(0, duration + 1, 5)
+    metric_averages = {}
+
+    for agent_count in agent_counts:
+        for status in protocol_status:
+            for outage_area_coverage in outage_area_coverages:
+                count = 0
+                metric_sum = np.zeros_like(metric_timestamps)
+
+                for seed in seeds:
+                    metrics, _, _, _, _ = parse_log_file(f"{folder_path}/{scenario_base_name}-{seed}-{agent_count}-{outage_area_coverage}-{seed}-{status}.log")
+                    timestamps = np.array([m[0] for m in metrics])
+                    counts_with_message = np.array([m[2] for m in metrics])
+                    interpolated_counts_with_message = np.interp(metric_timestamps, timestamps, counts_with_message)
+                    metric_sum = metric_sum + interpolated_counts_with_message
+                    count += 1
+                metric_averages[f"{agent_count}-{outage_area_coverage}-{status}"] = np.divide(metric_sum, count)
+    return metric_averages, metric_timestamps
+
 
 def parse_log_file(log_file):
     metrics = []
