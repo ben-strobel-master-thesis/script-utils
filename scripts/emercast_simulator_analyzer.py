@@ -41,9 +41,28 @@ def analyze_single_log(log_file, max_agents):
 
 
 def analyze_batch_log(folder_path, scenario_base_name, duration, seeds, agent_counts, outage_area_coverages):
-    metric_averages, metric_timestamps = get_batch_average_metrics(folder_path, scenario_base_name, 800, seeds, agent_counts, outage_area_coverages)
+    metric_averages, metric_timestamps = get_batch_average_metrics(folder_path, scenario_base_name, 1000, seeds, agent_counts, outage_area_coverages)
+    enabled_disabled_plot(metric_averages, metric_timestamps)
     create_outage_area_plot(metric_averages, metric_timestamps, outage_area_coverages)
     create_agent_count_plot(metric_averages, metric_timestamps, agent_counts)
+
+
+def enabled_disabled_plot(metric_averages, metric_timestamps):
+    agentcount = 10000
+
+    agents_0_8_enabled = metric_averages[f"{agentcount}-{0.8}-enabled"]
+    agents_0_8_disabled = metric_averages[f"{agentcount}-{0.8}-disabled"]
+
+    fig = plt.figure()
+    ax = fig.add_subplot(1, 1, 1)
+
+    ax.set_ylim(0, agentcount)
+    ax.set_xlim([0, 1000])
+    ax.set_xticks([0, 200, 400, 600, 800, 1000])
+
+    ax.plot(metric_timestamps, agents_0_8_enabled, color="tab:blue")
+    ax.plot(metric_timestamps, agents_0_8_disabled, color="tab:orange")
+    plt.show()
 
 
 def create_outage_area_plot(metric_averages, metric_timestamps, outage_area_coverages):
@@ -63,7 +82,7 @@ def create_outage_area_plot(metric_averages, metric_timestamps, outage_area_cove
         np.linspace(0, z.shape[0] - 1, z.shape[0]), z, axis=0, kind='linear'
     )(np.linspace(0, z.shape[0] - 1, num_interpolated_lines))
 
-    ax.set_xlim([0, 800])
+    ax.set_xlim([0, 1000])
     ax.set_ylim([0.2, 0.8])
 
     norm = plt.Normalize(0, 10000)
@@ -77,7 +96,7 @@ def create_outage_area_plot(metric_averages, metric_timestamps, outage_area_cove
     ax.set_ylabel("Outage area percentage")
     ax.set_zlabel("Agents with message", labelpad=5)
 
-    ax.set_xticks([0, 200, 400, 600, 800])
+    ax.set_xticks([0, 200, 400, 600, 800, 1000])
     ax.set_yticks([0.2, 0.4, 0.6, 0.8])
 
     sm = plt.cm.ScalarMappable(cmap=cm.jet, norm=norm)
@@ -107,7 +126,7 @@ def create_agent_count_plot(metric_averages, metric_timestamps, agent_counts):
         np.linspace(0, z.shape[0] - 1, z.shape[0]), z, axis=0, kind='linear'
     )(np.linspace(0, z.shape[0] - 1, num_interpolated_lines))
 
-    ax.set_xlim([0, 800])
+    ax.set_xlim([0, 1000])
     ax.set_ylim([0, 1000])
     ax.set_zlim([0, 10000])
 
@@ -121,7 +140,7 @@ def create_agent_count_plot(metric_averages, metric_timestamps, agent_counts):
     ax.set_ylabel("Agent count")
     ax.set_zlabel("Agents with message", labelpad=5)
 
-    ax.set_xticks([0, 200, 400, 600, 800])
+    ax.set_xticks([0, 200, 400, 600, 800, 1000])
     ax.set_yticks([1000, 5000, 10000])
 
     sm = plt.cm.ScalarMappable(cmap=cm.jet, norm=norm)
