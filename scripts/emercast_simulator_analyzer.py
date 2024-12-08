@@ -40,7 +40,9 @@ def analyze_single_log(log_file, max_agents):
 
 
 def analyze_batch_log(folder_path, scenario_base_name, duration, seeds, agent_counts, outage_area_coverages):
-    metric_averages, metric_timestamps = get_batch_average_metrics(folder_path, scenario_base_name, 1000, seeds, agent_counts, outage_area_coverages)
+    if not os.path.exists(figures_output_folder):
+        os.makedirs(figures_output_folder)
+    metric_averages, metric_timestamps = get_batch_average_metrics(folder_path, scenario_base_name, 1500, seeds, agent_counts, outage_area_coverages)
     create_enabled_disabled_plot(metric_averages, metric_timestamps)
     create_outage_area_plot(metric_averages, metric_timestamps, outage_area_coverages)
     create_agent_count_plot(metric_averages, metric_timestamps, agent_counts)
@@ -88,10 +90,8 @@ def create_message_hops_plot(event_averages, outage_area_coverages, agent_counts
 
     plt.colorbar(sm, ax=ax, pad=0.15, shrink=0.75)
     fig.tight_layout()
-    plt.savefig(f"{figures_output_folder}/connection_drop_plot.svg")
+    plt.savefig(f"{figures_output_folder}/connection_hops_plot.svg")
     plt.show()
-    if not os.path.exists(figures_output_folder):
-        os.makedirs(figures_output_folder)
 
 def create_connection_established_per_message_delivered_plot(event_averages, outage_area_coverages, agent_counts):
     protocol_status = "enabled"
@@ -127,34 +127,33 @@ def create_connection_established_per_message_delivered_plot(event_averages, out
 
     ax.set_xlabel("Agent count")
     ax.set_ylabel("Outage area %")
-    ax.set_zlabel("Connections dropped %", labelpad=10)
+    ax.set_zlabel("Message delivered\nby connection %", labelpad=10)
 
     plt.colorbar(sm, ax=ax, pad=0.15, shrink=0.75)
     fig.tight_layout()
     plt.savefig(f"{figures_output_folder}/connection_established_per_message_delivered_.svg")
     plt.show()
-    if not os.path.exists(figures_output_folder):
-        os.makedirs(figures_output_folder)
 
 
 def create_enabled_disabled_plot(metric_averages, metric_timestamps):
-    agentcount = 10000
+    agentcount = 1000
 
-    agents_0_8_enabled = metric_averages[f"{agentcount}-{0.8}-enabled"]
-    agents_0_8_disabled = metric_averages[f"{agentcount}-{0.8}-disabled"]
+    agents_0_2_enabled = metric_averages[f"{agentcount}-{0.2}-enabled"]
+    agents_0_2_disabled = metric_averages[f"{agentcount}-{0.2}-disabled"]
 
     fig = plt.figure()
     ax = fig.add_subplot(1, 1, 1)
 
     ax.set_ylim(0, agentcount)
-    ax.set_xlim([0, 1000])
-    ax.set_xticks([0, 200, 400, 600, 800, 1000])
+    ax.set_xlim([0, 1500])
+    ax.set_xticks([0, 300, 600, 900, 1200, 1500])
 
     ax.set_xlabel("Time in s")
     ax.set_ylabel("Agents with message", labelpad=5)
 
-    ax.plot(metric_timestamps, agents_0_8_enabled, color="tab:blue")
-    ax.plot(metric_timestamps, agents_0_8_disabled, color="tab:orange")
+    ax.plot(metric_timestamps, agents_0_2_enabled, color="tab:blue", label="Without Emercast System")
+    ax.plot(metric_timestamps, agents_0_2_disabled, color="tab:orange", label="With Emercast System")
+    ax.legend(loc="lower left")
     fig.tight_layout()
     plt.savefig(f"{figures_output_folder}/enabled_disabled_by_timestamp.svg")
     plt.show()
@@ -177,7 +176,7 @@ def create_outage_area_plot(metric_averages, metric_timestamps, outage_area_cove
         np.linspace(0, z.shape[0] - 1, z.shape[0]), z, axis=0, kind='linear'
     )(np.linspace(0, z.shape[0] - 1, num_interpolated_lines))
 
-    ax.set_xlim([0, 1000])
+    ax.set_xlim([0, 1500])
     ax.set_ylim([0.2, 0.8])
 
     norm = plt.Normalize(0, 10000)
@@ -191,7 +190,7 @@ def create_outage_area_plot(metric_averages, metric_timestamps, outage_area_cove
     ax.set_ylabel("Outage area %")
     ax.set_zlabel("Agents with message", labelpad=5)
 
-    ax.set_xticks([0, 200, 400, 600, 800, 1000])
+    ax.set_xticks([0, 300, 600, 900, 1200, 1500])
     ax.set_yticks([0.2, 0.4, 0.6, 0.8])
 
     sm = plt.cm.ScalarMappable(cmap=cm.jet, norm=norm)
@@ -201,8 +200,6 @@ def create_outage_area_plot(metric_averages, metric_timestamps, outage_area_cove
     plt.savefig(f"{figures_output_folder}/outage_area_by_timestamp.svg")
     fig.tight_layout()
     plt.show()
-    if not os.path.exists(figures_output_folder):
-        os.makedirs(figures_output_folder)
 
 
 def create_agent_count_plot(metric_averages, metric_timestamps, agent_counts):
@@ -222,7 +219,7 @@ def create_agent_count_plot(metric_averages, metric_timestamps, agent_counts):
         np.linspace(0, z.shape[0] - 1, z.shape[0]), z, axis=0, kind='linear'
     )(np.linspace(0, z.shape[0] - 1, num_interpolated_lines))
 
-    ax.set_xlim([0, 1000])
+    ax.set_xlim([0, 1500])
     ax.set_ylim([0, 1000])
     ax.set_zlim([0, 10000])
 
@@ -236,7 +233,7 @@ def create_agent_count_plot(metric_averages, metric_timestamps, agent_counts):
     ax.set_ylabel("Agent count")
     ax.set_zlabel("Agents with message", labelpad=5)
 
-    ax.set_xticks([0, 200, 400, 600, 800, 1000])
+    ax.set_xticks([0, 300, 600, 900, 1200, 1500])
     ax.set_yticks([1000, 5000, 10000])
 
     sm = plt.cm.ScalarMappable(cmap=cm.jet, norm=norm)
@@ -246,8 +243,6 @@ def create_agent_count_plot(metric_averages, metric_timestamps, agent_counts):
     plt.savefig(f"{figures_output_folder}/agent_count_by_timestamp.svg")
     fig.tight_layout()
     plt.show()
-    if not os.path.exists(figures_output_folder):
-        os.makedirs(figures_output_folder)
 
 
 def get_batch_event_data(folder_path, scenario_base_name, seeds, agent_counts, outage_area_coverages):
