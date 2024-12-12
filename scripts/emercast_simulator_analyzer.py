@@ -1,7 +1,7 @@
 import os
 
 import matplotlib.pyplot as plt
-from matplotlib import cm
+from matplotlib import cm, pylab
 import numpy as np
 from scipy.interpolate import interp1d, interp2d
 from matplotlib.collections import EventCollection
@@ -47,6 +47,7 @@ def analyze_batch_log(folder_path, scenario_base_name, duration, seeds, agent_co
     create_outage_area_plot(metric_averages, metric_timestamps, outage_area_coverages)
     create_agent_count_plot(metric_averages, metric_timestamps, agent_counts)
     event_averages = get_batch_event_data(folder_path, scenario_base_name, seeds, agent_counts, outage_area_coverages)
+    pylab.rcParams['xtick.major.pad'] = '6'
     create_message_hops_plot(event_averages, outage_area_coverages, agent_counts)
     create_connection_established_per_message_delivered_plot(event_averages, outage_area_coverages, agent_counts)
 
@@ -83,6 +84,13 @@ def create_message_hops_plot(event_averages, outage_area_coverages, agent_counts
 
     sm = plt.cm.ScalarMappable(cmap=cm.jet, norm=norm)
     sm.set_array([])
+
+    ax.scatter(
+        X_orig,
+        Y_orig,
+        Z_orig,
+        color='black'
+    )
 
     ax.set_xlabel("Agent count")
     ax.set_ylabel("Outage area %")
@@ -125,6 +133,13 @@ def create_connection_established_per_message_delivered_plot(event_averages, out
     sm = plt.cm.ScalarMappable(cmap=cm.jet, norm=norm)
     sm.set_array([])
 
+    ax.scatter(
+        X_orig,
+        Y_orig,
+        Z_orig,
+        color='black'
+    )
+
     ax.set_xlabel("Agent count")
     ax.set_ylabel("Outage area %")
     ax.set_zlabel("Message delivered\nby connection %", labelpad=10)
@@ -164,17 +179,20 @@ def create_outage_area_plot(metric_averages, metric_timestamps, outage_area_cove
     protocol_status = "enabled"
     fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
 
-    y = np.array(outage_area_coverages)
+    y_non_interp = np.array(outage_area_coverages)
     num_interpolated_lines = 15
-    y = np.linspace(y.min(), y.max(), num_interpolated_lines)
+    y = np.linspace(y_non_interp.min(), y_non_interp.max(), num_interpolated_lines)
 
     x = metric_timestamps
+    x_steps = np.array([0, 300,600,900,1200,1500])
     X, Y = np.meshgrid(x, y)
+    X_non_interp , Y_non_interp = np.meshgrid(x_steps, y_non_interp)
 
+    z_non_interp  = np.array([(metric_averages[f"{agent_count}-{value}-{protocol_status}"])[::60] for value in outage_area_coverages])
     z = np.array([metric_averages[f"{agent_count}-{value}-{protocol_status}"] for value in outage_area_coverages])
     z = interp1d(
-        np.linspace(0, z.shape[0] - 1, z.shape[0]), z, axis=0, kind='linear'
-    )(np.linspace(0, z.shape[0] - 1, num_interpolated_lines))
+        np.linspace(0, z .shape[0] - 1, z .shape[0]), z , axis=0, kind='linear'
+    )(np.linspace(0, z .shape[0] - 1, num_interpolated_lines))
 
     ax.set_xlim([0, 1500])
     ax.set_ylim([0.2, 0.8])
@@ -185,6 +203,13 @@ def create_outage_area_plot(metric_averages, metric_timestamps, outage_area_cove
     surface.set_facecolor((0, 0, 0, 0))
     ax.set_xlim(ax.get_xlim()[::-1])
     ax.set_zlim([0, 10000])
+
+    ax.scatter(
+        X_non_interp,
+        Y_non_interp,
+        z_non_interp,
+        color='black'
+    )
 
     ax.set_xlabel("Time in s")
     ax.set_ylabel("Outage area %")
@@ -207,13 +232,16 @@ def create_agent_count_plot(metric_averages, metric_timestamps, agent_counts):
     protocol_status = "enabled"
     fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
 
-    y = np.array(agent_counts)
+    y_non_interp = np.array(agent_counts)
     num_interpolated_lines = 15
-    y = np.linspace(y.min(), y.max(), num_interpolated_lines)
+    y = np.linspace(y_non_interp.min(), y_non_interp.max(), num_interpolated_lines)
 
     x = metric_timestamps
+    x_steps = np.array([0, 300, 600, 900, 1200, 1500])
     X, Y = np.meshgrid(x, y)
+    X_non_interp, Y_non_interp = np.meshgrid(x_steps, y_non_interp)
 
+    z_non_interp = np.array([(metric_averages[f"{value}-{outage_area_coverage}-{protocol_status}"])[::60] for value in agent_counts])
     z = np.array([metric_averages[f"{value}-{outage_area_coverage}-{protocol_status}"] for value in agent_counts])
     z = interp1d(
         np.linspace(0, z.shape[0] - 1, z.shape[0]), z, axis=0, kind='linear'
@@ -227,6 +255,13 @@ def create_agent_count_plot(metric_averages, metric_timestamps, agent_counts):
     colors = cm.jet(norm(z))
     surface = ax.plot_surface(X, Y, z, facecolors=colors, shade=False, norm=norm)
     surface.set_facecolor((0, 0, 0, 0))
+
+    ax.scatter(
+        X_non_interp,
+        Y_non_interp,
+        z_non_interp,
+        color='black'
+    )
 
     ax.set_xlim(ax.get_xlim()[::-1])
     ax.set_xlabel("Time in s")
