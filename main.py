@@ -1,12 +1,10 @@
 from scripts import emercast_simulator_utils, emercast_simulator_analyzer, one_simulator_utils, wkt_file_utils
 
 min_bound = (689016.97, 5333281.47)
-# min_bound = wkt_file_utils.remove_unreachable_multilines("./scenarios/intermediate_walkable_lines.wkt", "./scenarios/emercast_city_model.wkt", 0)
+wkt_file_utils.remove_unreachable_multilines("./scenarios/intermediate_walkable_lines.wkt", "./scenarios/emercast_city_model.wkt", 0)
 wkt_file_utils.create_skeleton_with_fingers("./scenarios/emercast_city_model.wkt", "./scenarios/emercast_city_model_skeleton.wkt")
-# one_simulator_utils.setup_one_simulator()
-# emercast_simulator_utils.download_emercast_simulator()
-
-# Random city scenario runs
+one_simulator_utils.setup_one_simulator()
+emercast_simulator_utils.download_emercast_simulator()
 
 def run_experiment_with_analysis(seed, scenario_name, duration, agent_count, outage_cover_percentage):
     file_name = f"{scenario_name}-{seed}"
@@ -26,9 +24,6 @@ seeds = [1,2,3,4,5]
 agent_counts = [1000, 5000, 10000]
 outage_area_coverages = [0.2, 0.4, 0.6, 0.8]
 duration = 1500
-
-emercast_simulator_analyzer.analyze_batch_log("./scenarios/emercast-simulator-output", "random-city", duration, seeds, agent_counts, outage_area_coverages)
-exit(0)
 
 for seed in seeds:
     for agent_count in agent_counts:
