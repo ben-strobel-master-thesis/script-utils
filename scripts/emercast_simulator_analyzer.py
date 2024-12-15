@@ -8,6 +8,20 @@ from matplotlib.collections import EventCollection
 
 figures_output_folder = "./figures"
 
+
+def analyze_batch_log(folder_path, scenario_base_name, duration, seeds, agent_counts, outage_area_coverages):
+    if not os.path.exists(figures_output_folder):
+        os.makedirs(figures_output_folder)
+    metric_averages, metric_timestamps = get_batch_average_metrics(folder_path, scenario_base_name, 1500, seeds, agent_counts, outage_area_coverages)
+    create_enabled_disabled_plot(metric_averages, metric_timestamps)
+    create_outage_area_plot(metric_averages, metric_timestamps, outage_area_coverages)
+    create_agent_count_plot(metric_averages, metric_timestamps, agent_counts)
+    event_averages = get_batch_event_data(folder_path, scenario_base_name, seeds, agent_counts, outage_area_coverages)
+    pylab.rcParams['xtick.major.pad'] = '6'
+    create_message_hops_plot(event_averages, outage_area_coverages, agent_counts)
+    create_connection_established_per_message_delivered_plot(event_averages, outage_area_coverages, agent_counts)
+
+
 def analyze_single_log(log_file, max_agents):
     metrics, ce, poor, cto, mt = parse_log_file(log_file)
 
@@ -37,19 +51,6 @@ def analyze_single_log(log_file, max_agents):
 
     ax.set_title(f"Emercast log analysis")
     plt.show()
-
-
-def analyze_batch_log(folder_path, scenario_base_name, duration, seeds, agent_counts, outage_area_coverages):
-    if not os.path.exists(figures_output_folder):
-        os.makedirs(figures_output_folder)
-    metric_averages, metric_timestamps = get_batch_average_metrics(folder_path, scenario_base_name, 1500, seeds, agent_counts, outage_area_coverages)
-    create_enabled_disabled_plot(metric_averages, metric_timestamps)
-    create_outage_area_plot(metric_averages, metric_timestamps, outage_area_coverages)
-    create_agent_count_plot(metric_averages, metric_timestamps, agent_counts)
-    event_averages = get_batch_event_data(folder_path, scenario_base_name, seeds, agent_counts, outage_area_coverages)
-    pylab.rcParams['xtick.major.pad'] = '6'
-    create_message_hops_plot(event_averages, outage_area_coverages, agent_counts)
-    create_connection_established_per_message_delivered_plot(event_averages, outage_area_coverages, agent_counts)
 
 
 def create_message_hops_plot(event_averages, outage_area_coverages, agent_counts):
